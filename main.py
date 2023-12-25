@@ -1,6 +1,6 @@
 import base64
 import requests
-import gradio
+import gradio as gr
 import numpy as np
 from PIL import Image
 from io import BytesIO
@@ -12,8 +12,8 @@ api_key = "sk-"
 messages = [{"role": "system",
              "content": "You are a masterchef that is here to suggest excellent cooking recipes"}]
 
-# Prompt
-prompt = "This is my fridge. Analyze the contents carefully, and suggest a recipe I could make."
+# Default Prompt
+default_prompt = "This is my fridge. Analyze the contents carefully, and suggest a recipe I could make"
 
 # Function to encode the image
 
@@ -34,15 +34,14 @@ headers = {
     "Authorization": f"Bearer {api_key}"
 }
 
-# Payload
+# Function to create payload based on selected cuisine
 
 
-def imageInput(image):
+def imageInput(image, cuisine):
     base64_image = encode_image(image) if image is not None else None
 
-
-def imageInput(image):
-    base64_image = encode_image(image) if image is not None else None
+    # Customize prompt based on the selected cuisine
+    prompt = f"This is my fridge. Analyze the contents carefully, and suggest a {cuisine} recipe I could make"
 
     payload = {
         "model": "gpt-4-vision-preview",
@@ -67,12 +66,24 @@ def imageInput(image):
     }
     return payload
 
-
 # ChatGPT Function
 
 
-def ChatGPT(image):
-    payload = imageInput(image)
+def ChatGPT(image, Chinese, Western, Italian, Korean, Japanese):
+    if Chinese:
+        selected_cuisine = ["Chinese"]
+    elif Western:
+        selected_cuisine = ["Western"]
+    elif Italian:
+        selected_cuisine = ["Italian"]
+    elif Korean:
+        selected_cuisine = ["Korean"]
+    elif Japanese:
+        selected_cuisine = ["Japanese"]
+    else:
+        selected_cuisine = ["General"]
+
+    payload = imageInput(image, ", ".join(selected_cuisine))
 
     response = requests.post(
         "https://api.openai.com/v1/chat/completions", headers=headers, json=payload)
@@ -83,9 +94,16 @@ def ChatGPT(image):
 
 
 # Gradio Interface Setup
-webapp = gradio.Interface(
+webapp = gr.Interface(
     fn=ChatGPT,
-    inputs="image",
+    inputs=[
+        "image",
+        gr.Checkbox("Chinese"),
+        gr.Checkbox("Western"),
+        gr.Checkbox("Italian"),
+        gr.Checkbox("Korean"),
+        gr.Checkbox("Japanese")
+    ],
     outputs="text",
     title="ChefGPT"
 )
